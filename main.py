@@ -46,7 +46,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_ADDRESS")
 
 # Cloudinary config — images stored permanently in the cloud
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 5 MB limit; I increased it to 16MB in other to upload specific files
 cloudinary.config(
     cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key    = os.getenv("CLOUDINARY_API_KEY"),
