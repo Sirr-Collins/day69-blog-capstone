@@ -46,7 +46,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_ADDRESS")
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 2096  # 5 MB limit; but i increased to test a feature
 
 # Flask extensions
 ckeditor = CKEditor(app)
