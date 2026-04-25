@@ -349,7 +349,7 @@ def logout():
 def _send_confirmation_email(user):
     token = serializer.dumps(user.email, salt="email-confirm")
     link  = url_for("confirm_email", token=token, _external=True)
-    msg   = Message("Confirm your email — Angela's Blog", recipients=[user.email])
+    msg   = Message("Confirm your email — Collins's Blog", recipients=[user.email])
     msg.body = (
         f"Hi {user.name},\n\n"
         f"Thanks for registering! Please confirm your email address by clicking the link below:\n\n"
