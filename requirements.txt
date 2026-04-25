@@ -11,12 +11,12 @@ SQLAlchemy>=2.0.35
 gunicorn==21.2.0
 psycopg2-binary
 python-dotenv
-#  Required for Email() validator in WTForms
+# NEW: Required for Email() validator in WTForms
 email-validator
-#  Rate limiting to protect login/register routes from brute force
+# NEW: Rate limiting to protect login/register routes from brute force
 flask-limiter
 Flask-Mail              # Email confirmation + password reset
 itsdangerous            # Timed token signing for email/reset links
+cloudinary                # Persistent image hosting — survives Render redeploys
 flask-caching
 feedgen
-
