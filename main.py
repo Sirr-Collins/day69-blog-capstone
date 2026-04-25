@@ -23,6 +23,8 @@ from sqlalchemy import Integer, String, Text, Boolean, Table, Column, ForeignKey
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 from forms import (CreatePostForm, RegisterForm, LoginForm,
                    CommentForm, UserProfileForm, ResetRequestForm, ResetPasswordForm)
 
@@ -42,11 +44,15 @@ app.config['MAIL_USERNAME'] = os.getenv("MAIL_ADDRESS")
 app.config['MAIL_PASSWORD'] = os.getenv("PASSWORD_KEY")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_ADDRESS")
 
-# Image upload config
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
+# Cloudinary config — images stored permanently in the cloud
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 2096  # 5 MB limit; but i increased to test a feature
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
+cloudinary.config(
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key    = os.getenv("CLOUDINARY_API_KEY"),
+    api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+    secure     = True
+)
 
 # Flask extensions
 ckeditor = CKEditor(app)
@@ -269,6 +275,25 @@ def admin_only(function):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def upload_to_cloudinary(file):
+    """Upload a file to Cloudinary and return the secure URL."""
+    # Check credentials are configured before attempting upload
+    if not os.getenv("CLOUDINARY_CLOUD_NAME"):
+        print("[Cloudinary] ERROR: CLOUDINARY_CLOUD_NAME not set in environment")
+        return None
+    try:
+        result = cloudinary.uploader.upload(
+            file,
+            folder="blog_posts",
+            transformation=[{"quality": "auto", "fetch_format": "auto"}]
+        )
+        url = result.get("secure_url")
+        print(f"[Cloudinary] Upload successful: {url}")
+        return url
+    except Exception as e:
+        print(f"[Cloudinary] Upload FAILED: {e}")
+        return None
+
 
 def _parse_tags(tag_string):
     """Turn 'python, flask, web' into a list of Tag objects, creating missing ones."""
@@ -407,7 +432,7 @@ def forgot_password():
             try:
                 token = serializer.dumps(user.email, salt="password-reset")
                 link  = url_for("reset_password", token=token, _external=True)
-                msg   = Message("Reset your password — Angela's Blog", recipients=[user.email])
+                msg   = Message("Reset your password — Collins's Blog", recipients=[user.email])
                 msg.body = (
                     f"Hi {user.name},\n\n"
                     f"Click the link below to reset your password:\n\n"
@@ -580,10 +605,12 @@ def add_new_post():
         img_url = form.img_url.data or ''
         file = request.files.get('img_file')
         if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            img_url = url_for('static', filename=f'uploads/{filename}')
+            # Upload to Cloudinary — persists across deploys
+            cloudinary_url = upload_to_cloudinary(file)
+            if cloudinary_url:
+                img_url = cloudinary_url
+            else:
+                flash("Image upload failed — please try a URL instead.")
 
         new_post = BlogPost(
             title=form.title.data,
@@ -621,10 +648,12 @@ def edit_post(post_id):
     if edit_form.validate_on_submit():
         file = request.files.get('img_file')
         if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            post.img_url = url_for('static', filename=f'uploads/{filename}')
+            # Upload to Cloudinary — persists across deploys
+            cloudinary_url = upload_to_cloudinary(file)
+            if cloudinary_url:
+                post.img_url = cloudinary_url
+            else:
+                flash("Image upload failed — existing image kept.")
         else:
             post.img_url = edit_form.img_url.data
 
@@ -718,7 +747,7 @@ def rss_feed():
                         mimetype="text/plain", status=503)
     fg = FeedGenerator()
     fg.id(request.url_root)
-    fg.title("Angela's Blog")
+    fg.title("Collins's Blog")
     fg.link(href=request.url_root, rel='alternate')
     fg.link(href=request.host_url.rstrip('/') + url_for('rss_feed'), rel='self')
     fg.language('en')
