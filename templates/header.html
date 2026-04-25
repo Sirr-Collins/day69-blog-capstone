@@ -2,112 +2,133 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+    <!-- SEO: dynamic description per page; falls back to site default -->
+    {% if seo_description %}
+    <meta name="description" content="{{ seo_description }}" />
+    {% else %}
+    <meta name="description" content="Angela's Blog — a collection of random musings on tech, life, and everything in between." />
+    {% endif %}
+
+    <!-- SEO: Open Graph tags for social sharing previews -->
+    <meta property="og:title"       content="{% if seo_title %}{{ seo_title }}{% else %}Angela's Blog{% endif %}" />
+    <meta property="og:description" content="{% if seo_description %}{{ seo_description }}{% else %}A collection of random musings.{% endif %}" />
+    {% if seo_image %}<meta property="og:image" content="{{ seo_image }}" />{% endif %}
+    <meta property="og:type" content="{% if seo_title %}article{% else %}website{% endif %}" />
+
     <meta name="author" content="" />
-    <title>Angela's Blog</title>
+    <title>{% if seo_title %}{{ seo_title }} | Collins's Blog{% else %}Collins's Blog{% endif %}</title>
+
     {% block styles %}
-    <!-- Load Bootstrap-Flask CSS here -->
     {{ bootstrap.load_css() }}
-    <link
-      rel="icon"
-      type="image/x-icon"
-      href="{{ url_for('static', filename='assets/favicon.ico') }}"
-    />
-    <!-- Font Awesome icons (free version)-->
-    <script
-      src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"
-      crossorigin="anonymous"
-    ></script>
-    <!-- Google fonts-->
-    <link
-      href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <link
-      href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <!-- Core theme CSS (includes Bootstrap)-->
-    <link
-      href="{{ url_for('static', filename='css/styles.css') }}"
-      rel="stylesheet"
-    />
+    <link rel="icon" type="image/x-icon"
+          href="{{ url_for('static', filename='assets/favicon.ico') }}" />
+    <!-- RSS auto-discovery -->
+    <link rel="alternate" type="application/rss+xml"
+          title="Angela's Blog RSS Feed" href="{{ url_for('rss_feed') }}" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"
+            crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"
+          rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800"
+          rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+    <!-- UI Upgrade layer — add blog-upgrades.css to static/css/ -->
+    <link href="{{ url_for('static', filename='css/blog-upgrades.css') }}" rel="stylesheet" />
+    <!-- Dark mode: apply before paint to avoid white flash -->
+    <script>
+      (function() {
+        if (localStorage.getItem('darkMode') === 'true') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     {% endblock %}
   </head>
   <body>
-    <!-- Navigation-->
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
       <div class="container px-4 px-lg-5">
-        <a class="navbar-brand" href="/">Start Bootstrap</a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarResponsive"
-          aria-controls="navbarResponsive"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          Menu
-          <i class="fas fa-bars"></i>
+        <a class="navbar-brand" href="{{ url_for('get_all_posts') }}">Collins's Blog</a>
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false"
+                aria-label="Toggle navigation">
+          Menu <i class="fas fa-bars"></i>
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav ms-auto py-4 py-lg-0">
+
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('get_all_posts') }}"
-                >Home</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('get_all_posts') }}">Home</a>
             </li>
-            <!-- TODO: Only show Login/Register if user is logged out. Otherwise show "Log Out" -->
-              {% if not current_user.is_authenticated %}
+
+            {% if not current_user.is_authenticated %}
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('login') }}"
-                >Login</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('login') }}">Login</a>
             </li>
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('register') }}"
-                >Register</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('register') }}">Register</a>
             </li>
-              {% else %}
+            {% else %}
+            <!-- NEW: link to user's own profile -->
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('logout') }}"
-                >Log Out</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('user_profile', user_id=current_user.id) }}">
+                My Profile</a>
             </li>
-              {% endif %}
+            <!-- NEW: admin dashboard link — only visible to admin -->
+            {% if current_user.id == 1 %}
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('about') }}"
-                >About</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-gauge-high"></i> Dashboard</a>
+            </li>
+            {% endif %}
+            <li class="nav-item">
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('logout') }}">Log Out</a>
+            </li>
+            {% endif %}
+
+            <li class="nav-item">
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('about') }}">About</a>
             </li>
             <li class="nav-item">
-              <a
-                class="nav-link px-lg-3 py-3 py-lg-4"
-                href="{{ url_for('contact') }}"
-                >Contact</a
-              >
+              <a class="nav-link px-lg-3 py-3 py-lg-4"
+                 href="{{ url_for('contact') }}">Contact</a>
             </li>
+
+            <!-- Dark mode toggle -->
+            <li class="nav-item d-flex align-items-center ms-2">
+              <button id="darkToggle" class="btn btn-sm btn-outline-secondary border-0"
+                      title="Toggle dark mode" onclick="toggleDark()">
+                <i class="fas fa-moon" id="darkIcon"></i>
+              </button>
+            </li>
+
+            <!-- NEW: Search bar in navbar -->
+            <li class="nav-item d-flex align-items-center ms-lg-3">
+              <form class="d-flex" action="{{ url_for('get_all_posts') }}" method="GET">
+                <div class="input-group input-group-sm">
+                  <input class="form-control" type="search" name="q"
+                         placeholder="Search posts…"
+                         value="{{ request.args.get('q', '') }}"
+                         aria-label="Search" />
+                  <button class="btn btn-outline-secondary" type="submit">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </form>
+            </li>
+
           </ul>
         </div>
       </div>
     </nav>
-  </body>
-</html>
+    <!-- FIX: Removed stray </body></html> that was here before -->

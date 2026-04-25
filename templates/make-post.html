@@ -2,22 +2,17 @@
 include "header.html" %}
 
 <!-- Page Header -->
-<header
-  class="masthead"
-  style="background-image: url('../static/assets/img/edit-bg.jpg')"
->
+<header class="masthead" style="background-image: url('../static/assets/img/edit-bg.jpg')">
   <div class="container position-relative px-4 px-lg-5">
     <div class="row gx-4 gx-lg-5 justify-content-center">
       <div class="col-md-10 col-lg-8 col-xl-7">
         <div class="page-heading">
-          {% if is_edit: %}
+          {% if is_edit %}
           <h1>Edit Post</h1>
-          {% else: %}
+          {% else %}
           <h1>New Post</h1>
           {% endif %}
-          <span class="subheading"
-            >You're going to make a great blog post!</span
-          >
+          <span class="subheading">You're going to make a great blog post!</span>
         </div>
       </div>
     </div>
@@ -28,10 +23,68 @@ include "header.html" %}
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-        {{ ckeditor.load() }} {{ ckeditor.config(name='body') }} {{
-        render_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+
+        <!-- NOTE: enctype required for file upload to work -->
+        <form method="POST" enctype="multipart/form-data" novalidate>
+          {{ form.hidden_tag() }}
+
+          <!-- Title -->
+          <div class="mb-3">
+            {{ form.title.label(class="form-label fw-bold") }}
+            {{ form.title(class="form-control") }}
+          </div>
+
+          <!-- Subtitle -->
+          <div class="mb-3">
+            {{ form.subtitle.label(class="form-label fw-bold") }}
+            {{ form.subtitle(class="form-control") }}
+          </div>
+
+          <!-- Image Upload (NEW) -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Post Image</label>
+            <div class="mb-2">
+              {{ form.img_file.label(class="form-label text-muted small") }}
+              {{ form.img_file(class="form-control form-control-sm") }}
+            </div>
+            <div>
+              {{ form.img_url.label(class="form-label text-muted small") }}
+              {{ form.img_url(class="form-control form-control-sm",
+                              placeholder="https://example.com/image.jpg") }}
+            </div>
+            <div class="form-text">Upload an image OR paste a URL. Upload takes priority.</div>
+          </div>
+
+          <!-- Tags (NEW) -->
+          <div class="mb-3">
+            {{ form.tags.label(class="form-label fw-bold") }}
+            {{ form.tags(class="form-control",
+                         placeholder="e.g. python, flask, tutorial") }}
+            <div class="form-text">Separate tags with commas.</div>
+          </div>
+
+          <!-- Draft toggle (NEW) -->
+          <div class="mb-3 form-check">
+            {{ form.is_published(class="form-check-input") }}
+            {{ form.is_published.label(class="form-check-label fw-bold") }}
+            <div class="form-text">Uncheck to save as a draft (only you can see it).</div>
+          </div>
+
+          <!-- CKEditor body -->
+          <div class="mb-3">
+            {{ form.body.label(class="form-label fw-bold") }}
+            {{ ckeditor.load() }}
+            {{ ckeditor.config(name='body') }}
+            {{ form.body(class="form-control") }}
+          </div>
+
+          {{ form.submit(class="btn btn-primary") }}
+        </form>
+
       </div>
     </div>
   </div>
 </main>
-{% include "footer.html" %} {% endblock %}
+
+{% include "footer.html" %}
+{% endblock %}

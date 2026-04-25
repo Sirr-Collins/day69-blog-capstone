@@ -38,6 +38,8 @@
             action="{{ url_for('contact') }}"
             method="post"
           >
+            <!-- FIX: Added CSRF token to protect against cross-site request forgery -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="form-floating">
               <input
                 class="form-control"

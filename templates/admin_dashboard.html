@@ -1,0 +1,176 @@
+{% include "header.html" %}
+
+<!-- Page Header -->
+<header class="masthead" style="background-image: url('../static/assets/img/img-5.jpg.jpg')">
+  <div class="container position-relative px-4 px-lg-5">
+    <div class="row justify-content-center">
+      <div class="col-md-10 col-lg-8 col-xl-7">
+        <div class="site-heading">
+          <h1>Admin Dashboard</h1>
+          <span class="subheading">Your blog at a glance.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="mb-5">
+  <div class="container px-4 px-lg-5">
+
+    <!-- Stats cards -->
+    <div class="row gx-3 gy-3 mb-5 mt-4">
+      <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0 h-100">
+          <div class="card-body">
+            <div class="display-5 fw-bold text-primary">{{ total_posts }}</div>
+            <div class="text-muted small mt-1"><i class="fas fa-file-alt"></i> Posts</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0 h-100">
+          <div class="card-body">
+            <div class="display-5 fw-bold text-success">{{ total_users }}</div>
+            <div class="text-muted small mt-1"><i class="fas fa-users"></i> Users</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0 h-100">
+          <div class="card-body">
+            <div class="display-5 fw-bold text-info">{{ total_comments }}</div>
+            <div class="text-muted small mt-1"><i class="fas fa-comments"></i> Comments</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center shadow-sm border-0 h-100">
+          <div class="card-body">
+            <div class="display-5 fw-bold text-danger">{{ total_likes }}</div>
+            <div class="text-muted small mt-1"><i class="fas fa-heart"></i> Likes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row gx-4">
+
+      <!-- Top posts by views -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-primary text-white fw-bold">
+            <i class="fas fa-fire"></i> Top Posts by Views
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for post in top_posts %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <a href="{{ url_for('show_post', post_id=post.id) }}"
+                 class="text-decoration-none text-truncate" style="max-width:70%;">
+                {{ post.title }}
+              </a>
+              <span>
+                <span class="badge text-bg-secondary me-1">
+                  <i class="fas fa-eye"></i> {{ post.views }}
+                </span>
+                <span class="badge text-bg-danger">
+                  <i class="fas fa-heart"></i> {{ post.likes | length }}
+                </span>
+              </span>
+            </li>
+            {% else %}
+            <li class="list-group-item text-muted">No posts yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Drafts -->
+      <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-warning text-dark fw-bold">
+            <i class="fas fa-file-pen"></i> Drafts ({{ drafts | length }})
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for draft in drafts %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="text-truncate" style="max-width:65%;">{{ draft.title }}</span>
+              <div>
+                <a href="{{ url_for('edit_post', post_id=draft.id) }}"
+                   class="btn btn-sm btn-outline-primary me-1">
+                  <i class="fas fa-pen"></i> Edit
+                </a>
+                <a href="{{ url_for('delete_post', post_id=draft.id) }}"
+                   class="btn btn-sm btn-outline-danger"
+                   onclick="return confirm('Delete this draft?');">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {% else %}
+            <li class="list-group-item text-muted">No drafts.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Recent Users -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-success text-white fw-bold">
+        <i class="fas fa-user-plus"></i> Recent Registered Users
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Posts</th>
+              <th>Comments</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in recent_users %}
+            <tr>
+              <td>{{ user.id }}</td>
+              <td>
+                <img src="{{ user.email | gravatar(size=28) }}"
+                     class="rounded-circle me-2" alt="{{ user.name }}" />
+                {{ user.name }}
+              </td>
+              <td class="text-muted small">{{ user.email }}</td>
+              <td>{{ user.posts | length }}</td>
+              <td>{{ user.comments | length }}</td>
+              <td>
+                <a href="{{ url_for('user_profile', user_id=user.id) }}"
+                   class="btn btn-sm btn-outline-secondary">View</a>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-muted text-center">No users yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('add_new_post') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Post
+      </a>
+      <a href="{{ url_for('get_all_posts') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-home"></i> View Blog
+      </a>
+      <a href="{{ url_for('rss_feed') }}" class="btn btn-outline-warning" target="_blank">
+        <i class="fas fa-rss"></i> RSS Feed
+      </a>
+    </div>
+
+  </div>
+</main>
+
+{% include "footer.html" %}

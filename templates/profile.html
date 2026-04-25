@@ -1,0 +1,68 @@
+{% set seo_title = profile_user.name ~ "'s Profile" %}
+{% set seo_description = profile_user.bio if profile_user.bio else "Posts by " ~ profile_user.name %}
+{% include "header.html" %}
+
+<!-- Page Header -->
+<header class="masthead" style="background-image: url('../static/assets/img/img-2.jpg.jpg')">
+  <div class="container position-relative px-4 px-lg-5">
+    <div class="row gx-4 gx-lg-5 justify-content-center">
+      <div class="col-md-10 col-lg-8 col-xl-7">
+        <div class="page-heading">
+          <img src="{{ profile_user.email | gravatar(size=80) }}"
+               class="rounded-circle mb-3 border border-3 border-white"
+               alt="{{ profile_user.name }}" />
+          <h1>{{ profile_user.name }}</h1>
+          {% if profile_user.bio %}
+          <span class="subheading">{{ profile_user.bio }}</span>
+          {% else %}
+          <span class="subheading text-muted fst-italic">No bio yet.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="mb-4">
+  <div class="container px-4 px-lg-5">
+    <div class="row gx-4 gx-lg-5 justify-content-center">
+      <div class="col-md-10 col-lg-8 col-xl-7">
+
+        <!-- Edit profile button — only visible to the profile owner -->
+        {% if current_user.is_authenticated and current_user.id == profile_user.id %}
+        <div class="d-flex justify-content-end mb-4">
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{{ url_for('edit_profile') }}">
+            <i class="fas fa-pen"></i> Edit Profile
+          </a>
+        </div>
+        {% endif %}
+
+        <h4 class="mb-3">Posts by {{ profile_user.name }}</h4>
+
+        {% if posts %}
+          {% for post in posts %}
+          <div class="post-preview">
+            <a href="{{ url_for('show_post', post_id=post.id) }}">
+              <h5 class="post-title">{{ post.title }}</h5>
+              <p class="post-subtitle text-muted">{{ post.subtitle }}</p>
+            </a>
+            <p class="post-meta small">
+              {{ post.date }}
+              &nbsp;·&nbsp; <i class="fas fa-clock"></i> {{ post.reading_time }} min read
+              &nbsp;·&nbsp; <i class="fas fa-eye"></i> {{ post.views }} views
+              &nbsp;·&nbsp; <i class="fas fa-heart text-danger"></i> {{ post.likes | length }}
+            </p>
+          </div>
+          <hr class="my-3" />
+          {% endfor %}
+        {% else %}
+          <p class="text-muted">This user hasn't published any posts yet.</p>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</main>
+
+{% include "footer.html" %}
