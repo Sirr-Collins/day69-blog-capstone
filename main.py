@@ -28,13 +28,25 @@ import cloudinary.uploader
 from forms import (CreatePostForm, RegisterForm, LoginForm,
                    CommentForm, UserProfileForm, ResetRequestForm, ResetPasswordForm)
 
-########### App Setup 
+# ─── App Setup ────────────────────────────────────────────────────────────────
 
-load_dotenv()             # loads envirnment variables
+load_dotenv()
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "dev-only-insecure-key")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_URI", "sqlite:///blog.db")
+
+# Connection pool settings — fixes SSL EOF / stale connection errors on Render
+# pool_pre_ping: tests every connection before using it, reconnects if dropped
+# pool_recycle: recycles connections after 280s (Render drops idle ones at ~300s)
+# pool_size / max_overflow: limits concurrent DB connections on free tier
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 280,
+    "pool_size": 5,
+    "max_overflow": 2,
+    "connect_args": {"connect_timeout": 10},
+}
 
 # Flask-Mail — for email confirmation and password reset
 app.config['MAIL_SERVER']   = os.getenv("MAIL_SERVER", "smtp.gmail.com")
@@ -46,7 +58,7 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_ADDRESS")
 
 # Cloudinary config — images stored permanently in the cloud
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 5 MB limit; I increased it to 16MB in other to upload specific files
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
 cloudinary.config(
     cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key    = os.getenv("CLOUDINARY_API_KEY"),
@@ -54,11 +66,11 @@ cloudinary.config(
     secure     = True
 )
 
-#### Flask extensions
+# Flask extensions
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
-# Rate limiter : brute-force protection on auth routes
+# Rate limiter — brute-force protection on auth routes
 limiter = Limiter(get_remote_address, app=app, default_limits=[])
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -77,7 +89,7 @@ else:
 MAIL_ADDRESS = os.getenv("MAIL_ADDRESS")
 MAIL_APP_PW  = os.getenv("PASSWORD_KEY")
 
-######3 Database 
+# ─── Database ─────────────────────────────────────────────────────────────────
 
 class Base(DeclarativeBase):
     pass
@@ -173,13 +185,13 @@ class Like(db.Model):
     post = relationship("BlogPost", back_populates="likes")
 
 
-#  Gravatar: For users profile pics 
+# ─── Gravatar ─────────────────────────────────────────────────────────────────
 
 gravatar = Gravatar(app, size=100, rating='g', default='retro',
                     force_default=False, force_lower=False,
                     use_ssl=False, base_url=None)
 
-########## Create tables 
+# ─── Create tables ────────────────────────────────────────────────────────────
 
 def _get_sqlite_path():
     """
@@ -201,12 +213,12 @@ def _get_sqlite_path():
 
 
 with app.app_context():
-    # Ensures the instance folder exists before db.create_all() writes to it
+    # Ensure the instance folder exists before db.create_all() writes to it
     import os as _os
     _os.makedirs(app.instance_path, exist_ok=True)
     db.create_all()
 
-    # Inline migration : safely adds new columns to existing databases
+    # Inline migration — safely add new columns to existing databases
     import sqlite3 as _sqlite3
     _db_path = _get_sqlite_path()
     if _db_path:
@@ -238,7 +250,7 @@ with app.app_context():
     if _db_path:
         print(f"[DB] {_db_path}")
 
-#####################   Auth 
+# ─── Auth ─────────────────────────────────────────────────────────────────────
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -270,7 +282,8 @@ def admin_only(function):
     return decorated_function
 
 
-############################ Helpers 
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -306,7 +319,7 @@ def _parse_tags(tag_string):
     return tags
 
 
-#########################################################################  Routes: Auth
+# ─── Routes: Auth ─────────────────────────────────────────────────────────────
 
 @app.route('/register', methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -368,12 +381,12 @@ def logout():
 
 
 
-################################################ Routes: Email Confirmation & Password Reset 
+# ─── Routes: Email Confirmation & Password Reset ──────────────────────────────
 
 def _send_confirmation_email(user):
     token = serializer.dumps(user.email, salt="email-confirm")
     link  = url_for("confirm_email", token=token, _external=True)
-    msg   = Message("Confirm your email — Collins's Blog", recipients=[user.email])
+    msg   = Message("Confirm your email — Angela's Blog", recipients=[user.email])
     msg.body = (
         f"Hi {user.name},\n\n"
         f"Thanks for registering! Please confirm your email address by clicking the link below:\n\n"
@@ -431,7 +444,7 @@ def forgot_password():
             try:
                 token = serializer.dumps(user.email, salt="password-reset")
                 link  = url_for("reset_password", token=token, _external=True)
-                msg   = Message("Reset your password — Collins's Blog", recipients=[user.email])
+                msg   = Message("Reset your password — Angela's Blog", recipients=[user.email])
                 msg.body = (
                     f"Hi {user.name},\n\n"
                     f"Click the link below to reset your password:\n\n"
@@ -472,7 +485,7 @@ def reset_password(token):
                            current_user=current_user, token=token)
 
 
-################################################################ Routes: Posts 
+# ─── Routes: Posts ────────────────────────────────────────────────────────────
 
 @app.route('/')
 def get_all_posts():
@@ -677,7 +690,7 @@ def delete_post(post_id):
     return redirect(url_for('get_all_posts'))
 
 
-########################### Routes: User Profiles 
+# ─── Routes: User Profiles ────────────────────────────────────────────────────
 
 @app.route("/user/<int:user_id>")
 def user_profile(user_id):
@@ -705,7 +718,8 @@ def edit_profile():
     return render_template("edit_profile.html", form=form, current_user=current_user)
 
 
-################################## Routes: Admin Dashboard
+# ─── Routes: Admin Dashboard ──────────────────────────────────────────────────
+
 @app.route("/admin/dashboard")
 @admin_only
 def admin_dashboard():
@@ -735,7 +749,7 @@ def admin_dashboard():
                            current_user=current_user)
 
 
-########################## Routes: RSS Feed 
+# ─── Routes: RSS Feed ─────────────────────────────────────────────────────────
 
 @app.route("/feed.xml")
 def rss_feed():
@@ -745,7 +759,7 @@ def rss_feed():
                         mimetype="text/plain", status=503)
     fg = FeedGenerator()
     fg.id(request.url_root)
-    fg.title("Collins's Blog")
+    fg.title("Angela's Blog")
     fg.link(href=request.url_root, rel='alternate')
     fg.link(href=request.host_url.rstrip('/') + url_for('rss_feed'), rel='self')
     fg.language('en')
@@ -768,7 +782,8 @@ def rss_feed():
     return Response(fg.rss_str(pretty=True), mimetype='application/rss+xml')
 
 
-########################### Routes: Static Pages 
+# ─── Routes: Static Pages ─────────────────────────────────────────────────────
+
 @app.route("/about")
 def about():
     return render_template("about.html", current_user=current_user)
@@ -792,6 +807,8 @@ def send_email(name, email, phone, message):
         connection.sendmail(from_addr=MAIL_ADDRESS, to_addrs=MAIL_ADDRESS, msg=email_message)
 
 
-#Run 
+# ─── Run ──────────────────────────────────────────────────────────────────────
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
